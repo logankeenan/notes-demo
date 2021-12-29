@@ -2,7 +2,9 @@ use tide::{Request, Response};
 use crate::template_models::notes;
 use askama::Template;
 use tide::http::mime;
+use crate::models::note::NewNote;
 use crate::services::notes_service::all_notes;
+use crate::template_models::notes::New;
 
 pub async fn index(_req: Request<()>) -> tide::Result {
     let notes = all_notes().await;
@@ -16,4 +18,35 @@ pub async fn index(_req: Request<()>) -> tide::Result {
         .build();
 
     Ok(response)
+}
+
+pub async fn new(_req: Request<()>) -> tide::Result {
+    let template = New {};
+    let body = template.render().unwrap();
+    let response = Response::builder(200)
+        .body(body)
+        .content_type(mime::HTML)
+        .build();
+
+    Ok(response)
+}
+
+pub async fn create(mut req: Request<()>) -> tide::Result {
+    let new_note: NewNote = req.body_form().await?;
+
+    let result = surf::post("http://localhost:3000/notes").body_json(&new_note).unwrap().await;
+
+    match result {
+        Ok(_) => {
+            let response = Response::builder(302)
+                .header("Location", "/notes")
+                .build();
+
+            Ok(response)
+        }
+        Err(_) => {
+            // TODO better error handling
+            Ok(Response::from("an error occured"))
+        }
+    }
 }

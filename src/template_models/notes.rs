@@ -1,8 +1,12 @@
 use askama::Template;
 use crate::models::note::Note; // bring trait in scope
 
-#[derive(Template)] // this will generate the code...
-#[template(path = "notes/index.html")] // using the te
+#[derive(Template)]
+#[template(path = "notes/index.html")]
 pub struct Index<'a> {
     pub notes: &'a Vec<Note>
 }
+
+#[derive(Template)]
+#[template(path = "notes/new.html")]
+pub struct New {}
