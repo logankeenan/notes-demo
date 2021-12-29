@@ -17,3 +17,11 @@ pub struct New {}
 pub struct Edit<'a> {
     pub note: &'a Note,
 }
+
+#[derive(Template)]
+#[template(path = "notes/show.html", escape = "none")]
+pub struct Show<'a> {
+    pub note: &'a Note,
+    pub markdown_html: &'a String,
+}
+

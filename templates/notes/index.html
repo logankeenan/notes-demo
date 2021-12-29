@@ -11,7 +11,7 @@
     {% for note in notes %}
     <li class="list-group-item d-flex">
         {{note.title}}
-        <a href="/notes/edit/{{note.id}}" class="btn btn-outline-secondary btn-sm ms-auto">Details</a>
+        <a href="/notes/{{note.id}}" class="btn btn-outline-secondary btn-sm ms-auto">Details</a>
         <a href="/notes/edit/{{note.id}}" class="btn btn-outline-secondary btn-sm ms-2">Edit</a>
     </li>
     {% endfor %}
