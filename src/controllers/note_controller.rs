@@ -3,11 +3,10 @@ use crate::template_models::notes;
 use askama::Template;
 use tide::http::mime;
 use crate::models::note::{NoteForm, Note};
-use crate::services::notes_service::all_notes;
 use crate::template_models::notes::{Edit, New};
 
 pub async fn index(_req: Request<()>) -> tide::Result {
-    let notes = all_notes().await;
+    let notes: Vec<Note> = surf::get("http://localhost:3000/notes").recv_json().await?;
     let notes_template_model = notes::Index {
         notes: &notes
     };
