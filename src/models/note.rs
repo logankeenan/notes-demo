@@ -10,7 +10,7 @@ pub struct Note {
 }
 
 #[derive(Deserialize, Serialize)]
-pub struct NewNote {
+pub struct NoteForm {
     pub title: String,
     pub markdown: String,
 }
