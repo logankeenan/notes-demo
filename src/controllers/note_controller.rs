@@ -6,8 +6,14 @@ use tide::http::mime;
 use crate::models::note::{NoteForm, Note};
 use crate::template_models::notes::{Edit, New, Show};
 
+fn api_url_for_path(path: &str) -> String {
+    let api_url = dotenv::var("api_url").unwrap_or(String::from("api_url_not_defined"));
+
+    format!("{}{}", api_url, path)
+}
+
 pub async fn index(_req: Request<()>) -> tide::Result {
-    let notes: Vec<Note> = surf::get("http://localhost:3000/notes").recv_json().await?;
+    let notes: Vec<Note> = surf::get(api_url_for_path("/notes")).recv_json().await?;
     let notes_template_model = notes::Index {
         notes: &notes
     };
@@ -33,7 +39,7 @@ pub async fn new(_req: Request<()>) -> tide::Result {
 
 pub async fn create(mut req: Request<()>) -> tide::Result {
     let new_note: NoteForm = req.body_form().await?;
-    let api_result = surf::post("http://localhost:3000/notes").body_json(&new_note)?.await;
+    let api_result = surf::post(api_url_for_path("/notes")).body_json(&new_note)?.await;
 
     match api_result {
         Ok(_) => {
@@ -53,7 +59,7 @@ pub async fn create(mut req: Request<()>) -> tide::Result {
 
 pub async fn edit(req: Request<()>) -> tide::Result {
     let id = req.param("id")?;
-    let note: Note = surf::get(format!("http://localhost:3000/notes/{}", id)).recv_json().await?;
+    let note: Note = surf::get(api_url_for_path(format!("/notes/{}", id).as_str())).recv_json().await?;
 
     let edit_template = Edit {
         note: &note
@@ -71,7 +77,7 @@ pub async fn update(mut req: Request<()>) -> tide::Result {
     let note: NoteForm = req.body_form().await?;
     let id = req.param("id")?;
 
-    let api_result = surf::put(format!("http://localhost:3000/notes/{}", id))
+    let api_result = surf::put(api_url_for_path(format!("/notes/{}", id).as_str()))
         .body_json(&note)?
         .await;
 
@@ -87,7 +93,7 @@ pub async fn update(mut req: Request<()>) -> tide::Result {
 
 pub async fn show(req: Request<()>) -> tide::Result {
     let id = req.param("id")?;
-    let note: Note = surf::get(format!("http://localhost:3000/notes/{}", id))
+    let note: Note = surf::get(api_url_for_path(format!("/notes/{}", id).as_str()))
         .recv_json()
         .await?;
 
