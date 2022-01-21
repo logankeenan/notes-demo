@@ -7,7 +7,7 @@ use crate::models::note::{NoteForm, Note};
 use crate::template_models::notes::{Edit, New, Show};
 
 fn api_url_for_path(path: &str) -> String {
-    let api_url = dotenv::var("api_url").unwrap_or(String::from("api_url_not_defined"));
+    let api_url = dotenv::var("API_URL").unwrap_or(String::from("api_url_not_defined"));
 
     format!("{}{}", api_url, path)
 }
