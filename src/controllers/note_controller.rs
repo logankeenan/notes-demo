@@ -4,16 +4,17 @@ use askama::Template;
 use pulldown_cmark::{Parser, Options, html};
 use tide::http::mime;
 use crate::models::note::{NoteForm, Note};
+use crate::AppState;
 use crate::template_models::notes::{Edit, New, Show};
 
-fn api_url_for_path(path: &str) -> String {
-    let api_url = dotenv::var("API_URL").unwrap_or(String::from("api_url_not_defined"));
+fn api_url_for_path(state: &AppState, path: &str) -> String {
+    let api_url = state.environment.get("API_ORIGIN").unwrap();
 
     format!("{}{}", api_url, path)
 }
 
-pub async fn index(_req: Request<()>) -> tide::Result {
-    let notes: Vec<Note> = surf::get(api_url_for_path("/notes")).recv_json().await?;
+pub async fn index(_req: Request<AppState>) -> tide::Result {
+    let notes: Vec<Note> = surf::get(api_url_for_path(_req.state(),"/notes")).recv_json().await?;
     let notes_template_model = notes::Index {
         notes: &notes
     };
@@ -26,7 +27,7 @@ pub async fn index(_req: Request<()>) -> tide::Result {
     Ok(response)
 }
 
-pub async fn new(_req: Request<()>) -> tide::Result {
+pub async fn new(_req: Request<AppState>) -> tide::Result {
     let template = New {};
     let body = template.render()?;
     let response = Response::builder(200)
@@ -37,9 +38,9 @@ pub async fn new(_req: Request<()>) -> tide::Result {
     Ok(response)
 }
 
-pub async fn create(mut req: Request<()>) -> tide::Result {
+pub async fn create(mut req: Request<AppState>) -> tide::Result {
     let new_note: NoteForm = req.body_form().await?;
-    let api_result = surf::post(api_url_for_path("/notes")).body_json(&new_note)?.await;
+    let api_result = surf::post(api_url_for_path(req.state(),"/notes")).body_json(&new_note)?.await;
 
     match api_result {
         Ok(_) => {
@@ -57,9 +58,9 @@ pub async fn create(mut req: Request<()>) -> tide::Result {
 }
 
 
-pub async fn edit(req: Request<()>) -> tide::Result {
+pub async fn edit(req: Request<AppState>) -> tide::Result {
     let id = req.param("id")?;
-    let note: Note = surf::get(api_url_for_path(format!("/notes/{}", id).as_str())).recv_json().await?;
+    let note: Note = surf::get(api_url_for_path(req.state(),format!("/notes/{}", id).as_str())).recv_json().await?;
 
     let edit_template = Edit {
         note: &note
@@ -73,11 +74,11 @@ pub async fn edit(req: Request<()>) -> tide::Result {
     Ok(response)
 }
 
-pub async fn update(mut req: Request<()>) -> tide::Result {
+pub async fn update(mut req: Request<AppState>) -> tide::Result {
     let note: NoteForm = req.body_form().await?;
     let id = req.param("id")?;
 
-    let api_result = surf::put(api_url_for_path(format!("/notes/{}", id).as_str()))
+    let api_result = surf::put(api_url_for_path(req.state(), format!("/notes/{}", id).as_str()))
         .body_json(&note)?
         .await;
 
@@ -91,9 +92,9 @@ pub async fn update(mut req: Request<()>) -> tide::Result {
     }
 }
 
-pub async fn show(req: Request<()>) -> tide::Result {
+pub async fn show(req: Request<AppState>) -> tide::Result {
     let id = req.param("id")?;
-    let note: Note = surf::get(api_url_for_path(format!("/notes/{}", id).as_str()))
+    let note: Note = surf::get(api_url_for_path(req.state(),format!("/notes/{}", id).as_str()))
         .recv_json()
         .await?;
 
