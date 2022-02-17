@@ -1,9 +1,9 @@
 {% extends "layout.html" %}
 {% block title %}Notes{% endblock %}
 {% block content %}
-<nav class="d-flex py-2">
-    <a class="nav-link" href="/notes">Notes</a>
-    <a class="btn btn-secondary ms-auto" href="/notes/edit/{{note.id}}">Edit Note</a>
+<nav>
+    <a href="/notes">Notes</a>
+    <a href="/notes/edit/{{note.id}}">Edit Note</a>
 </nav>
 <h1>{{note.title}}</h1>
 {{markdown_html}}

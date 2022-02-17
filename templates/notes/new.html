@@ -1,20 +1,24 @@
 {% extends "layout.html" %}
 {% block title %}Notes{% endblock %}
 {% block content %}
-<nav class="d-flex py-2">
-    <a class="nav-link" href="/notes">Notes</a>
+<nav>
+    <a style="float: inherit;" href="/notes">Notes</a>
 </nav>
 <h1>New Note</h1>
 <form method="post" action="/notes">
-    <button class="btn btn-primary ms-auto d-block" type="submit">Create</button>
-    <div class="mb-3">
-        <label for="title" class="form-label">Title</label>
-        <input type="text" class="form-control" name="title" id="title">
+    <div>
+        <label for="title">Title</label>
+        <br>
+        <input type="text" name="title" id="title">
     </div>
-    <div class="mb-3">
-        <label for="markdown" class="sr-only form-label">Note</label>
-        <textarea class="form-control" name="markdown" id="markdown" rows="10"></textarea>
+    <br>
+    <div>
+        <label for="markdown">Note</label>
+        <br>
+        <textarea name="markdown" id="markdown" rows="10"></textarea>
     </div>
+    <br>
+    <button type="submit">Create</button>
 </form>
 
 {% endblock %}

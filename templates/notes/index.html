@@ -1,16 +1,27 @@
 {% extends "layout.html" %}
 {% block title %}Notes{% endblock %}
 {% block content %}
+<style>
+    ul {
+        list-style: none;
+        padding: 0;
+    }
 
-<nav class="d-flex py-2">
-    <a class="nav-link" href="/notes">Notes</a>
-    <a class="btn btn-primary ms-auto" href="/notes/new">New Note</a>
+    li {
+        font-size: 18px;
+        margin: 15px 0;
+    }
+</style>
+<nav>
+    <a href="/notes">Notes</a>
+    <a href="/notes/new">New Note</a>
 </nav>
+
 <h1>Notes</h1>
-<ul class="list-unstyled">
+<ul>
     {% for note in notes %}
-    <li class="my-2">
-        <a class="fs-4" href="/notes/{{note.id}}">{{note.title}}</a>
+    <li>
+        <a href="/notes/{{note.id}}">{{note.title}}</a>
     </li>
     {% endfor %}
 </ul>
