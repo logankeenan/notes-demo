@@ -14,16 +14,28 @@ fn api_url_for_path(state: &AppState, path: &str) -> String {
     format!("{}{}", api_url, path)
 }
 
-fn add_cookie_to_request(tide_request: &Request<AppState>, api_request: RequestBuilder) -> RequestBuilder {
+fn apply_user_to_request(tide_request: &Request<AppState>, request_builder: RequestBuilder) -> RequestBuilder {
     match tide_request.header("cookie") {
-        None => { api_request }
+        None => { request_builder }
         Some(cookie_value) => {
-            api_request.header("cookie", cookie_value)
+            request_builder.header("cookie", cookie_value)
         }
     }
 }
 
-fn create_response(status_code: u16, surf_response: SurfResponse) -> ResponseBuilder {
+fn surf_get_request(url: String, tide_request: &Request<AppState>) -> RequestBuilder {
+    apply_user_to_request(tide_request, surf::get(url))
+}
+
+fn surf_post_request(url: String, tide_request: &Request<AppState>) -> RequestBuilder {
+    apply_user_to_request(tide_request, surf::post(url))
+}
+
+fn surf_put_request(url: String, tide_request: &Request<AppState>) -> RequestBuilder {
+    apply_user_to_request(tide_request, surf::put(url))
+}
+
+fn tide_response(status_code: u16, surf_response: SurfResponse) -> ResponseBuilder {
     let response = Response::builder(status_code);
     match surf_response.header("set-cookie") {
         None => {
@@ -36,8 +48,10 @@ fn create_response(status_code: u16, surf_response: SurfResponse) -> ResponseBui
 }
 
 pub async fn index(tide_request: Request<AppState>) -> tide::Result {
-    let api_request: RequestBuilder = surf::get(api_url_for_path(tide_request.state(), "/notes"));
-    let api_request: RequestBuilder = add_cookie_to_request(&tide_request, api_request);
+    let api_request: RequestBuilder = surf_get_request(
+        api_url_for_path(tide_request.state(), "/notes"),
+        &tide_request,
+    );
     let mut api_response = api_request.await?;
     let note: Vec<Note> = api_response.body_json().await?;
 
@@ -46,7 +60,7 @@ pub async fn index(tide_request: Request<AppState>) -> tide::Result {
     };
 
     let body = notes_template_model.render()?;
-    let response = create_response(200, api_response)
+    let response = tide_response(200, api_response)
         .body(body)
         .content_type(mime::HTML)
         .build();
@@ -67,11 +81,13 @@ pub async fn new(_req: Request<AppState>) -> tide::Result {
 
 pub async fn create(mut req: Request<AppState>) -> tide::Result {
     let new_note: NoteForm = req.body_form().await?;
-    let api_request = surf::post(api_url_for_path(req.state(), "/notes")).body_json(&new_note)?;
-    let api_request = add_cookie_to_request(&req, api_request);
+    let api_request = surf_post_request(
+        api_url_for_path(req.state(), "/notes"),
+        &req,
+    ).body_json(&new_note)?;
     let api_response: SurfResponse = api_request.await?;
 
-    let response = create_response(302, api_response)
+    let response = tide_response(302, api_response)
         .header("Location", "/notes")
         .build();
 
@@ -81,8 +97,10 @@ pub async fn create(mut req: Request<AppState>) -> tide::Result {
 
 pub async fn edit(req: Request<AppState>) -> tide::Result {
     let id = req.param("id")?;
-    let api_request = surf::get(api_url_for_path(req.state(), format!("/notes/{}", id).as_str()));
-    let api_request = add_cookie_to_request(&req, api_request);
+    let api_request = surf_get_request(
+        api_url_for_path(req.state(), format!("/notes/{}", id).as_str()),
+        &req,
+    );
     let mut api_response = api_request.await?;
     let note: Note = api_response.body_json().await?;
 
@@ -90,9 +108,7 @@ pub async fn edit(req: Request<AppState>) -> tide::Result {
         note: &note
     };
     let body = edit_template.render()?;
-
-
-    let response = create_response(200, api_response)
+    let response = tide_response(200, api_response)
         .body(body)
         .content_type(mime::HTML)
         .build();
@@ -104,12 +120,13 @@ pub async fn update(mut req: Request<AppState>) -> tide::Result {
     let note: NoteForm = req.body_form().await?;
     let id = req.param("id")?;
 
-    let api_request = surf::put(api_url_for_path(req.state(), format!("/notes/{}", id).as_str()))
-        .body_json(&note)?;
-    let api_request = add_cookie_to_request(&req, api_request);
+    let api_request = surf_put_request(
+        api_url_for_path(req.state(), format!("/notes/{}", id).as_str()),
+        &req,
+    ).body_json(&note)?;
     let api_response = api_request.await?;
 
-    let response = create_response(302, api_response)
+    let response = tide_response(302, api_response)
         .header("Location", format!("/notes/{}", id))
         .build();
 
@@ -118,8 +135,10 @@ pub async fn update(mut req: Request<AppState>) -> tide::Result {
 
 pub async fn show(req: Request<AppState>) -> tide::Result {
     let id = req.param("id")?;
-    let api_request = surf::get(api_url_for_path(req.state(), format!("/notes/{}", id).as_str()));
-    let api_request = add_cookie_to_request(&req, api_request);
+    let api_request = surf_get_request(
+        api_url_for_path(req.state(), format!("/notes/{}", id).as_str()),
+        &req,
+    );
     let mut api_response = api_request.await?;
     let note: Note = api_response.body_json().await?;
 
@@ -135,7 +154,7 @@ pub async fn show(req: Request<AppState>) -> tide::Result {
     };
     let body = show_template.render()?;
 
-    let response = create_response(200, api_response)
+    let response = tide_response(200, api_response)
         .body(body)
         .content_type(mime::HTML)
         .build();
