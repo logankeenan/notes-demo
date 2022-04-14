@@ -1,8 +1,8 @@
-use tide::{Request, Response};
+use tide::{Request, Response, ResponseBuilder};
 use crate::template_models::notes;
 use askama::Template;
 use pulldown_cmark::{Parser, Options, html};
-use surf::RequestBuilder;
+use surf::{RequestBuilder, Response as SurfResponse};
 use tide::http::mime;
 use crate::models::note::{NoteForm, Note};
 use crate::AppState;
@@ -23,6 +23,18 @@ fn add_cookie_to_request(tide_request: &Request<AppState>, api_request: RequestB
     }
 }
 
+fn create_response(status_code: u16, surf_response: SurfResponse) -> ResponseBuilder {
+    let response = Response::builder(status_code);
+    match surf_response.header("set-cookie") {
+        None => {
+            response
+        }
+        Some(cookie_value) => {
+            response.header("set-cookie", cookie_value)
+        }
+    }
+}
+
 pub async fn index(tide_request: Request<AppState>) -> tide::Result {
     let api_request: RequestBuilder = surf::get(api_url_for_path(tide_request.state(), "/notes"));
     let api_request: RequestBuilder = add_cookie_to_request(&tide_request, api_request);
@@ -34,17 +46,10 @@ pub async fn index(tide_request: Request<AppState>) -> tide::Result {
     };
 
     let body = notes_template_model.render()?;
-    let mut response = Response::builder(200)
+    let response = create_response(200, api_response)
         .body(body)
         .content_type(mime::HTML)
         .build();
-
-    match api_response.header("set-cookie") {
-        None => {}
-        Some(cookie_value) => {
-            response.append_header("set-cookie", cookie_value);
-        }
-    }
 
     Ok(response)
 }
@@ -64,18 +69,11 @@ pub async fn create(mut req: Request<AppState>) -> tide::Result {
     let new_note: NoteForm = req.body_form().await?;
     let api_request = surf::post(api_url_for_path(req.state(), "/notes")).body_json(&new_note)?;
     let api_request = add_cookie_to_request(&req, api_request);
-    let api_response = api_request.await?;
+    let api_response: SurfResponse = api_request.await?;
 
-
-    let mut response = Response::builder(302)
+    let response = create_response(302, api_response)
         .header("Location", "/notes")
         .build();
-    match api_response.header("set-cookie") {
-        None => {}
-        Some(cookie_value) => {
-            response.append_header("set-cookie", cookie_value);
-        }
-    }
 
     Ok(response)
 }
@@ -93,17 +91,11 @@ pub async fn edit(req: Request<AppState>) -> tide::Result {
     };
     let body = edit_template.render()?;
 
-    let mut response = Response::builder(200)
+
+    let response = create_response(200, api_response)
         .body(body)
         .content_type(mime::HTML)
         .build();
-
-    match api_response.header("set-cookie") {
-        None => {}
-        Some(cookie_value) => {
-            response.append_header("set-cookie", cookie_value);
-        }
-    }
 
     Ok(response)
 }
@@ -117,14 +109,10 @@ pub async fn update(mut req: Request<AppState>) -> tide::Result {
     let api_request = add_cookie_to_request(&req, api_request);
     let api_response = api_request.await?;
 
-    let mut response = Response::builder(302).header("Location", format!("/notes/{}", id)).build();
+    let response = create_response(302, api_response)
+        .header("Location", format!("/notes/{}", id))
+        .build();
 
-    match api_response.header("set-cookie") {
-        None => {}
-        Some(cookie_value) => {
-            response.append_header("set-cookie", cookie_value);
-        }
-    }
     Ok(response)
 }
 
@@ -147,17 +135,10 @@ pub async fn show(req: Request<AppState>) -> tide::Result {
     };
     let body = show_template.render()?;
 
-    let mut response = Response::builder(200)
+    let response = create_response(200, api_response)
         .body(body)
         .content_type(mime::HTML)
         .build();
-
-    match api_response.header("set-cookie") {
-        None => {}
-        Some(cookie_value) => {
-            response.append_header("set-cookie", cookie_value);
-        }
-    }
 
     Ok(response)
 }
