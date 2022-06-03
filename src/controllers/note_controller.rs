@@ -15,12 +15,21 @@ fn api_url_for_path(state: &AppState, path: &str) -> String {
 }
 
 fn apply_user_to_request(tide_request: &Request<AppState>, request_builder: RequestBuilder) -> RequestBuilder {
-    match tide_request.header("cookie") {
+    let request_builder = match tide_request.header("cookie") {
         None => { request_builder }
         Some(cookie_value) => {
             request_builder.header("cookie", cookie_value)
         }
-    }
+    };
+
+    let request_builder = match tide_request.header("user-id") {
+        None => { request_builder }
+        Some(cookie_value) => {
+            request_builder.header("user-id", cookie_value)
+        }
+    };
+
+    request_builder
 }
 
 fn surf_get_request(url: String, tide_request: &Request<AppState>) -> RequestBuilder {
@@ -37,12 +46,18 @@ fn surf_put_request(url: String, tide_request: &Request<AppState>) -> RequestBui
 
 fn tide_response(status_code: u16, surf_response: SurfResponse) -> ResponseBuilder {
     let response = Response::builder(status_code);
-    match surf_response.header("set-cookie") {
+    let response = match surf_response.header("set-cookie") {
+        None => { response }
+        Some(cookie_value) => {
+            response.header("set-cookie", cookie_value)
+        }
+    };
+    match surf_response.header("user-id") {
         None => {
             response
         }
-        Some(cookie_value) => {
-            response.header("set-cookie", cookie_value)
+        Some(user_id) => {
+            response.header("user-id", user_id)
         }
     }
 }
